@@ -1,6 +1,6 @@
 # A wrapper for the fb_graph gem
 
-A wrapper for commonly used Facebook Graph API calls.
+A convenience wrapper for commonly used Facebook Graph API calls.
 
 ## Config
 
