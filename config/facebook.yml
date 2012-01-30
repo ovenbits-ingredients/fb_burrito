@@ -1,0 +1,20 @@
+:development:
+  :app_id: your-facebook-app-id
+  :app_secret: your-facebook-app-secret
+  :redirect_url: http://your-redirect-url
+  :permissions:
+    - your-list-of-facebook-permissions
+
+:production:
+  :app_id: your-facebook-app-id
+  :app_secret: your-facebook-app-secret
+  :redirect_url: http://your-redirect-url
+  :permissions:
+    - your-list-of-facebook-permissions
+
+:test:
+  :app_id: your-facebook-app-id
+  :app_secret: your-facebook-app-secret
+  :redirect_url: http://your-redirect-url
+  :permissions:
+    - your-list-of-facebook-permissions
