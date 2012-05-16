@@ -129,12 +129,10 @@ class FbBurrito
     def exchange_token
       auth = FbGraph::Auth.new(
         FbBurrito.config[:app_id],
-        FbBurrito.config[:secret_key]
+        FbBurrito.config[:app_secret]
       )
       res = auth.exchange_token!(access_token)
       res.access_token
-    rescue Exception => ex
-      puts ex.message
     end
 
     def publish!(options)
@@ -169,17 +167,17 @@ class FbBurrito
       self.auth_code = options.delete(:auth_code)
 
       permissions = FbBurrito.config[:permissions] + options[:permissions].to_a
-      self.options = options.merge(:scope => permissions)
+      self.options = options.merge(:scope => permissions.join(","))
     end
 
     def url
-      client.authorization_uri(options)
+      client.authorization_uri(:scope => options[:scope])
     end
 
     def client
       FbGraph::Auth.new(
         FbBurrito.config[:app_id],
-        FbBurrito.config[:secret_key],
+        FbBurrito.config[:app_secret],
         :redirect_uri => redirect_url
       ).client
     end

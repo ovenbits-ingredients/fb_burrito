@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'fb_burrito'
-  s.version     = '0.0.1'
+  s.version     = '0.1.0'
   s.add_runtime_dependency "fb_graph", [">= 2.4.15"]
   s.add_runtime_dependency "httparty", [">= 0.8.3"]
   s.add_development_dependency "rspec", [">= 2.10.0"]

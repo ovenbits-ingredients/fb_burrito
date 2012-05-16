@@ -18,7 +18,7 @@ Returns a Facebook authorization URL that will redirect back to the redirect_url
 
 Finds or creates a user from an auth_code returned by the Auth.url using the user_attributes defined in the config file. Returns an FbGraph User object.
 
-  FbBurrito.find_or_create_user!(:auth_code => code)
+    FbBurrito.find_or_create_user!(:auth_code => code)
 
 Returns a user for the given param.
 
