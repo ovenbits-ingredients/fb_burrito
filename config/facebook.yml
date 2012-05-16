@@ -1,20 +1,19 @@
-:development:
-  :app_id: your-facebook-app-id
-  :app_secret: your-facebook-app-secret
-  :redirect_url: http://your-redirect-url
-  :permissions:
-    - your-list-of-facebook-permissions
+# define column names for user table
+:user_attributes: &user_attributes
+  :user_class: User
+  :first_name: :first_name
+  :last_name: :last_name
+  :email: :email
+  :fb_access_token: :fb_token
+  :fb_id: :fb_uid
+  :password: :password
+  :is_ghost: :is_ghost
 
-:production:
-  :app_id: your-facebook-app-id
-  :app_secret: your-facebook-app-secret
-  :redirect_url: http://your-redirect-url
+:environment:
+  :app_id: 306722849409928
+  :app_secret: 1a2e7f4b54ea6166e5e14a906fa2f91a
+  :redirect_url: http://localhost:3000
   :permissions:
-    - your-list-of-facebook-permissions
-
-:test:
-  :app_id: your-facebook-app-id
-  :app_secret: your-facebook-app-secret
-  :redirect_url: http://your-redirect-url
-  :permissions:
-    - your-list-of-facebook-permissions
+    - email
+  :user_attributes:
+    <<: *user_attributes
