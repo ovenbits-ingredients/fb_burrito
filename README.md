@@ -5,31 +5,42 @@ A convenience wrapper for commonly used Facebook Graph API calls.
 ## Config
 
 The fb_fgraph gem is required.
+The httparty gem is required.
 
 See config/facebook.yml for configuration options.
 
 ## Usage
 
-Returns a Facebook authorization URL that will redirect back to the redirect_url given in the config file.
+Returns a Facebook authorization URL that will redirect back to the redirect_url in the config file or the given parameter.
 
-    Facebook.auth_url
+    FbBurrito.auth_url
+    FbBurrito.auth_url("http://some_url")
 
-Returns an access token from the code returned in the Facebook.auth_url redirect.
+Finds or creates a user from an auth_code returned by the Auth.url using the user_attributes defined in the config file. Returns an FbGraph User object.
 
-    Facebook.get_access_token(auth_code)
+  FbBurrito.find_or_create_user!(:auth_code => code)
 
-Returns a list of friends for the given access_token.
+Returns a user for the given param.
 
-    Facebook.friends(access_token)
+    FbBurrito.user(:access_token => token)
+    FbBurrito.user(:uid => uid)
+
+Returns a list of friends for the given param.
+
+    FbBurrito.friends(:access_token => token)
+
+    user = FbBurrito.find_or_create_user!(:auth_code => code)
+    user.friends
+
 
 Publishes content to the given user's wall.
 
-    Facebook.publish!(
+    FbBurrito.publish!(
       :access_token => access_token, # from user
-      :friend_fb_id => fb_id, # target user
-      :message => your-post-message,
-      :name => your-post-title,
-      :description => your-post-description,
+      :friend_uid => uid, # target user
+      :message => your-message,
+      :name => your-title,
+      :description => your-description,
       :picture => your-picture-url,
       :link => your-website-url
     )
