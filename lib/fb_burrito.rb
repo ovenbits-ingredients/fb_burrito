@@ -191,6 +191,7 @@ class FbBurrito
       res = auth_client.access_token!(:client_auth_body)
       res.access_token
     end
+
   end
 
   class FQL
@@ -204,9 +205,14 @@ class FbBurrito
         :q => q
       }
       res = get("/fql", :query => options)
+      body = JSON.parse(res.body)
 
-      data = res.body
-      JSON.parse(data)["data"]
+      if res.code == 200
+        body["data"]
+      else
+        error = body["error"]
+        puts "#{error["type"]}: #{error["message"]}"
+      end
     end
 
   end
@@ -245,24 +251,23 @@ class FbBurrito
 
   end
 
-end
+  # used to simulate an active record User model so we can test creating a user
+  class User
+    attr_accessor :first_name, :last_name, :email, :password, :fb_token, :fb_uid
 
+    def self.where(*args)
+      []
+    end
 
-# used to simulate an active record User model so we can test creating a user
-class User
-  attr_accessor :first_name, :last_name, :email, :password, :fb_token, :fb_uid
+    def initialize(*args)
+      args.first.each do |k, v|
+        self.send("#{k}=", v)
+      end
+    end
 
-  def self.where(*args)
-    []
-  end
-
-  def initialize(*args)
-    args.first.each do |k, v|
-      self.send("#{k}=", v)
+    def save!
+      self
     end
   end
 
-  def save!
-    self
-  end
 end
