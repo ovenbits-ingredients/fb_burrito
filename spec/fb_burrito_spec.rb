@@ -2,6 +2,14 @@ require 'fb_burrito'
 
 describe "Facebook Graph" do
 
+  it "should validate the Auth credentials" do
+    client = FbBurrito::Auth.new.client
+
+    client.identifier.should eq(FbBurrito.config[:app_id])
+    client.secret.should eq(FbBurrito.config[:app_secret])
+    client.redirect_uri.should eq(FbBurrito.config[:redirect_url])
+  end
+
   it "should return a Facebook Authorization url" do
     url = FbBurrito.auth_url
     uri = URI.parse(url)
