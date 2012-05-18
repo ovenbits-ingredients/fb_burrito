@@ -116,7 +116,7 @@ describe "Facebook Graph" do
 end
 
 def log(name, data)
-  puts "\n=== #{name} ===\n#{data.inspect}\n======"
+  # puts "\n=== #{name} ===\n#{data.inspect}\n======"
 end
 
 # used to simulate an active record User model so we can test creating a user
