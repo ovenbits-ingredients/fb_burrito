@@ -1,7 +1,8 @@
 class FbBurrito
 
+  require 'cgi'
+  require 'json'
   require 'httparty'
-  require 'fb_graph'
 
   def self.config
     path = File.join('config', 'facebook.yml')
@@ -10,186 +11,68 @@ class FbBurrito
     return yaml[:environment]
   end
 
-  def self.auth_url(redirect_url=nil, options={})
-    options.merge!(:redirect_url => redirect_url)
-    Auth.new(options).url
+  def self.auth_url(options={})
+    OpenGraph.new(options).auth_url
   end
 
-  def self.user(options)
+  def self.get_access_token(options={})
+    OpenGraph.new(options).get_access_token
   end
 
-  def self.publish!(options)
-    User.new(options).publish!
-  end
-
-  def self.friends(options)
-    User.new(options).friends
+  def self.user(options={})
+    OpenGraph.new(options).user
   end
 
   def self.find_or_create_user!(options)
-    User.new(options).find_or_create!
+    OpenGraph.new(options).find_or_create!
   end
 
-  class User
+  def self.publish!(options)
+    #TODO: remove FbGraph dependency
+  end
 
-    attr_accessor :auth_code, :access_token, :uid, :options
+  def self.friends(options)
+    #TODO: remove FbGraph dependency
+  end
 
-    def initialize(options={})
-      if options.any?
-        self.auth_code = options[:auth_code]
-        self.access_token = options[:access_token] ||
-                            Auth.new(options).get_access_token
-        self.uid = options[:uid]
-        self.options = options.reverse_merge(
-          :user_class => FbBurrito.config[:user_attributes][:user_class],
-          :password => friendly_token
-        )
-      end
-    end
-
-
-    ## methods
-
-    def fetch
-      puts "Fetching user..."
-
-      return nil if uid.nil? && access_token.nil?
-
-      FbGraph::User.fetch(uid || "me", :access_token => access_token)
-    end
-
-    def find_or_create!
-      # must have fb_user info to continue
-      return nil unless (fb_user = fetch)
-
-      # default class is User
-      user_attr = FbBurrito.config[:user_attributes]
-      user_class = Object.class_eval(
-        FbBurrito.config[:user_attributes][:class_user] ||
-        "User"
-      )
-
-      puts "Finding user..."
-      # check to see if the user already exists
-      if user = user_class.where(
-        "#{user_attr[:fb_id].to_s} = ? OR #{user_attr[:email].to_s} = ?",
-        fb_user.identifier,
-        fb_user.email
-      ).first
-        puts " Updating user..."
-        # check for a ghost user
-        if user_attr[:is_ghost] && user.send("#{user_attr[:is_ghost]}?") && (email = fb_user.email)
-          user.send("#{user_attr[:email]}=", email)
-          user.is_ghost = false
-        end
-        user.send("#{user_attr[:fb_id]}=", fb_user.identifier)
-        user.send("#{user_attr[:fb_access_token]}=", access_token) if defined?(access_token)
-      # if the user does not exist, create it
-      else
-        puts " Creating user..."
-        first_name, last_name = if (name = fb_user.name)
-          names = name.split(" ")
-          [names.shift, names.join(" ")]
-        else
-          [fb_user.first_name, fb_user.last_name]
-        end
-
-        user = user_class.new(
-          user_attr[:first_name] => first_name,
-          user_attr[:last_name] => last_name,
-          user_attr[:email] => fb_user.email || "",
-          user_attr[:fb_id] => fb_user.identifier,
-          user_attr[:password] => options[:password]
-        )
-
-        # set access_token
-        user.send("#{user_attr[:fb_access_token]}=", access_token)
-
-        # check for a ghost user
-        if user_attr[:is_ghost] && fb_user.email.nil?
-          user.send("#{user_attr[:is_ghost]}=", true)
-        end
-      end
-      user.save!
-
-      return user
-    end
+  class FbUser
 
     def friends
-      fetch.friends
+      #TODO: remove FbGraph dependency
+
+      # fetch.friends
     end
 
     def page(page_id)
-      FbGraph::Page.new(page_id).fetch(
-        :access_token => access_token,
-        :fields => [:access_token, :name]
-      )
+      #TODO: remove FbGraph dependency
+
+      # FbGraph::Page.new(page_id).fetch(
+      #   :access_token => access_token,
+      #   :fields => [:access_token, :name]
+      # )
     end
 
     def exchange_token
-      auth = FbGraph::Auth.new(
-        FbBurrito.config[:app_id],
-        FbBurrito.config[:app_secret]
-      )
-      res = auth.exchange_token!(access_token)
-      res.access_token
+      #TODO: remove FbGraph dependency
+
+      # auth = FbGraph::Auth.new(
+      #   FbBurrito.config[:app_id],
+      #   FbBurrito.config[:app_secret]
+      # )
+      # res = auth.exchange_token!(access_token)
+      # res.access_token
     end
 
     def publish!(options)
-      fetch.feed!(
-        :message => options[:message],
-        :name => options[:name],
-        :description => options[:description],
-        :picture => options[:picture],
-        :link => options[:link]
-      )
-    end
+      #TODO: remove FbGraph dependency
 
-    def friendly_token
-      token = ""
-
-      friendly_chars = ("a".."z").to_a + ("A".."Z").to_a + ("0".."9").to_a
-      1.upto(20) { |i| token << friendly_chars[rand(friendly_chars.size-1)] }
-
-      return token
-    end
-
-  end
-
-
-  class Auth
-
-    attr_accessor :redirect_url, :auth_code, :options
-
-    def initialize(options={})
-      self.redirect_url = options.delete(:redirect_url) ||
-                          FbBurrito.config[:redirect_url]
-      self.auth_code = options.delete(:auth_code)
-
-      permissions = FbBurrito.config[:permissions] + options[:permissions].to_a
-      self.options = options.merge(:scope => permissions.join(","))
-    end
-
-    def url
-      client.authorization_uri(:scope => options[:scope])
-    end
-
-    def client
-      FbGraph::Auth.new(
-        FbBurrito.config[:app_id],
-        FbBurrito.config[:app_secret],
-        :redirect_uri => redirect_url
-      ).client
-    end
-
-    def get_access_token
-      return nil unless auth_code
-
-      auth_client = client
-      auth_client.authorization_code = auth_code
-
-      res = auth_client.access_token!(:client_auth_body)
-      res.access_token
+      # fetch.feed!(
+      #   :message => options[:message],
+      #   :name => options[:name],
+      #   :description => options[:description],
+      #   :picture => options[:picture],
+      #   :link => options[:link]
+      # )
     end
 
   end
@@ -205,14 +88,8 @@ class FbBurrito
         :q => q
       }
       res = get("/fql", :query => options)
-      body = JSON.parse(res.body)
 
-      if res.code == 200
-        body["data"]
-      else
-        error = body["error"]
-        puts "#{error["type"]}: #{error["message"]}"
-      end
+      return Util.parse_response(res)
     end
 
   end
@@ -251,23 +128,206 @@ class FbBurrito
 
   end
 
-  # used to simulate an active record User model so we can test creating a user
-  class User
-    attr_accessor :first_name, :last_name, :email, :password, :fb_token, :fb_uid
+  class OpenGraph
+    include HTTParty
 
-    def self.where(*args)
-      []
-    end
+    attr_accessor :config, :options, :auth_code, :access_token, :uid
 
-    def initialize(*args)
-      args.first.each do |k, v|
-        self.send("#{k}=", v)
+    def initialize(options={})
+      self.config = FbBurrito.config
+      self.auth_code = options.delete(:auth_code)
+      self.access_token = options.delete(:access_token)
+      self.uid = options.delete(:uid) || "me"
+
+      redirect_url = options.delete(:redirect_url) || config[:redirect_url]
+      scope = if (perms = options.delete(:permissions))
+        perms.is_a?(Array) ? perms.join(",") : perms
+      else
+        config[:permissions].join(",")
       end
+
+      self.options = options.merge(
+        :client_id => config[:app_id],
+        :redirect_uri => CGI.escape(redirect_url),
+        :scope => scope
+      )
     end
 
-    def save!
-      self
+    def auth_url
+      uri = URI.parse("https://www.facebook.com/dialog/oauth")
+      uri.query = Util.to_query(options)
+
+      return uri.to_s
     end
+
+    def get_access_token
+      uri = URI.parse("https://graph.facebook.com/oauth/access_token")
+
+      query_hash = options.merge(
+        :client_secret => config[:app_secret],
+        :code => auth_code
+      )
+
+      uri.query = Util.to_query(query_hash)
+
+      res = OpenGraph.get(uri.to_s)
+      data = Util.parse_response(res)
+
+      token = data[:access_token]
+      self.access_token = token
+
+      return token
+    end
+
+    def user
+      get_access_token if auth_code
+
+      uri = URI.parse("https://graph.facebook.com/#{uid}")
+      uri.query = "access_token=#{access_token}" if access_token
+
+      res = OpenGraph.get(uri.to_s)
+
+      return Util.parse_response(res)
+    end
+
+    def find_or_create!
+      # must have fb_user info to continue
+      return nil unless (fb_user = user)
+
+      # default class is User
+      user_attr = FbBurrito.config[:user_attributes]
+      user_class = Object.class_eval(
+        FbBurrito.config[:user_attributes][:user_class] ||
+        "User"
+      )
+
+      puts "Finding user..."
+      # check to see if the user already exists
+      if @user = user_class.where(
+        "#{user_attr[:id].to_s} = ? OR #{user_attr[:email].to_s} = ?",
+        fb_user[:id],
+        fb_user[:email]
+      ).first
+        puts " Updating user..."
+        # check for a ghost user
+        if user_attr[:is_ghost] && (email = fb_user[:email])
+          set_user_attr(:email, email)
+          set_user_attr(:is_ghost, false)
+        end
+        set_user_attr(:uid, fb_user[:id])
+        set_user_attr(:access_token, access_token)
+
+      # if the user does not exist, create it
+      else
+        puts " Creating user..."
+
+        @user = user_class.new(
+          user_attr[:first_name] => fb_user[:first_name],
+          user_attr[:last_name] => fb_user[:last_name],
+          user_attr[:email] => fb_user[:email],
+          user_attr[:uid] => fb_user[:id],
+          user_attr[:access_token] => access_token,
+          user_attr[:password] => (options[:password] || Util.friendly_token)
+        )
+
+        # check for a ghost user
+        if user_attr[:is_ghost] && fb_user[:email].nil?
+          set_user_attr(:is_ghost, true)
+        end
+      end
+      @user.save!
+
+      return @user
+    end
+
+    private
+
+    def set_user_attr(key, value)
+      user_attr = config[:user_attributes]
+
+      return unless (@user.send("#{user_attr[key]}?") rescue nil)
+
+      @user.send("#{user_attr[key]}=", value)
+    end
+
+  end
+
+  class Util
+
+    class << self
+
+      def friendly_token
+        token = ""
+
+        friendly_chars = ("a".."z").to_a + ("A".."Z").to_a + ("0".."9").to_a
+        1.upto(20) { |i| token << friendly_chars[rand(friendly_chars.size-1)] }
+
+        return token
+      end
+
+      # convert a hash to a querystring params string
+      def to_query(hash)
+        hash.inject([]) do |params, (k, v)|
+          params << "#{k}=#{v}"
+          params
+        end.join("&")
+      end
+
+      def from_query(str)
+        params = str.split("&")
+        params.inject({}) do |new_hash, param|
+          k, v = param.split("=")
+          new_hash[k.to_sym] = v
+          new_hash
+        end
+      end
+
+      # recursively convert hash string keys to symbols
+      def keys_to_symbols(hash)
+        hash.inject({}) do |new_hash, (k, v)|
+          new_hash[k.to_sym] = if v.is_a?(Hash)
+            keys_to_symbols(v)
+          elsif v.is_a?(Array)
+            v.map{ |v| keys_to_symbols(v) }
+          else
+            v
+          end
+
+          new_hash
+        end
+      end
+
+      def parse_response(res)
+        body = res.body
+
+        data = if is_json?(body)
+          json = JSON.parse(body)
+          keys_to_symbols(json)
+        else
+          from_query(body)
+        end
+
+        raise_error(data) if res.code > 200
+
+        return data
+      end
+
+      def raise_error(data)
+        error = data[:error]
+        raise "#{error[:type]}: #{error[:code]}: #{error[:message]}"
+      end
+
+      def is_json?(str)
+        begin
+          JSON.parse(str).nil?
+          true
+        rescue
+          false
+        end
+      end
+
+    end # end self class
+
   end
 
 end

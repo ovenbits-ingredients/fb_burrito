@@ -4,8 +4,8 @@
   :first_name: :first_name
   :last_name: :last_name
   :email: :email
-  :fb_access_token: :fb_token
-  :fb_id: :fb_uid
+  :uid: :fb_uid
+  :access_token: :fb_token
   :password: :password
   :is_ghost: :is_ghost
 
@@ -15,17 +15,5 @@
   :redirect_url: http://localhost:4567/facebook
   :permissions:
     - email
-  :user_attributes:
-    <<: *user_attributes
-
-:development:
-  :app_id: 123622421018355
-  :app_secret: 0b7c614d4c5430cb2d37a99b8067ea19
-  :redirect_url: http://localhost:3000
-  :permissions:
-    - email
-    - offline_access
-    - publish_stream
-    - publish_actions
   :user_attributes:
     <<: *user_attributes
