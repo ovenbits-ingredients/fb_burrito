@@ -27,12 +27,8 @@ class FbBurrito
     OpenGraph.new(options).find_or_create!
   end
 
-  def self.publish!(options)
-    #TODO: remove FbGraph dependency
-  end
-
-  def self.friends(options)
-    #TODO: remove FbGraph dependency
+  def self.publish_feed!(options)
+    OpenGraph.new(options).publish_feed!
   end
 
   class FbUser
@@ -61,18 +57,6 @@ class FbBurrito
       # )
       # res = auth.exchange_token!(access_token)
       # res.access_token
-    end
-
-    def publish!(options)
-      #TODO: remove FbGraph dependency
-
-      # fetch.feed!(
-      #   :message => options[:message],
-      #   :name => options[:name],
-      #   :description => options[:description],
-      #   :picture => options[:picture],
-      #   :link => options[:link]
-      # )
     end
 
   end
@@ -238,6 +222,15 @@ class FbBurrito
       @user.save!
 
       return @user
+    end
+
+    def publish_feed!
+      uri = URI.parse("https://graph.facebook.com/#{uid}/feed")
+      uri.query = "access_token=#{access_token}"
+
+      res = OpenGraph.post(uri.to_s, :body => options)
+
+      return Util.parse_response(res)
     end
 
     private

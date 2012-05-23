@@ -24,3 +24,13 @@ Returns a user for the given param.
     FbBurrito.user(:auth_code => code)
     FbBurrito.user(:access_token => token)
     FbBurrito.user(:uid => uid)
+
+Publish to a user's feed for the given access_token.
+
+    FbBurrito.publish_feed!(
+      :access_token => token,
+      :message => "My message",
+      :name => "My name",
+      :caption => "My caption",
+      :description => "My description"
+    )

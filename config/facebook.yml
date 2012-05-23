@@ -15,5 +15,6 @@
   :redirect_url: http://localhost:4567/facebook
   :permissions:
     - email
+    - publish_stream
   :user_attributes:
     <<: *user_attributes

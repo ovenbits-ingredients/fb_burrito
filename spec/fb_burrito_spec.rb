@@ -2,6 +2,13 @@ require 'fb_burrito'
 
 describe "Facebook Graph" do
 
+  before(:each) do
+    @options = {
+      :auth_code => "AQARhsEpSwgXziIdX73_qdVCJ-mmIwXTLF0ckeT4kILb8nNx7jnQg37Ro4wlzdkfAHBoPkH5QSRmxBG9_ar1TagkjbNEA90XzZPriz04cUtvOtoA7S9V7vCWCJ6kyFFq0AyEGuvyeS6Up7XeH8azGU_UW-2VuLUk2dc697HIbpIuGA2HBRyHE3F1jHpMt3ry-iQ",
+      :access_token => "AAAEW9np7y4gBAONfO9ffLoLJMTClzoJZBxAxLizzskstyhGbR4qz0jKu5sZCnRjuumiHHitM575zG4WMxijwqZA0WZARSf8ZAfwt5SFYrmwZDZD"
+    }
+  end
+
   it "should return a valid Facebook authorization url" do
     uri = URI.parse(FbBurrito.auth_url)
 
@@ -13,7 +20,7 @@ describe "Facebook Graph" do
   end
 
   it "should return a Facebook access_token" do
-    token = FbBurrito.get_access_token(:auth_code => "AQBli9JgrXT0JhDDXw6x0E9V2w_mvxSQHEgkBYS5-jdxdZrd0mhGs59KIr95tAnS-OMX2GjXuLxBcaCqf708gx7z1Ne4RoDXT3P7aB057AgUt9f1v3SVdLENPGntFR9QuujhBaPrDQu7R0oE-Yj4OcZZ_yTKGHhmiKyPumYUvsZlv65Zs4gkqhLrV2WgB3W1QbA")
+    token = FbBurrito.get_access_token(:auth_code => @options[:auth_code])
 
     log("Access token", token)
 
@@ -45,7 +52,7 @@ describe "Facebook Graph" do
   end
 
   it "should return a Facebook user's non-public info from an auth_code" do
-    user = FbBurrito.user(:auth_code => "AQBli9JgrXT0JhDDXw6x0E9V2w_mvxSQHEgkBYS5-jdxdZrd0mhGs59KIr95tAnS-OMX2GjXuLxBcaCqf708gx7z1Ne4RoDXT3P7aB057AgUt9f1v3SVdLENPGntFR9QuujhBaPrDQu7R0oE-Yj4OcZZ_yTKGHhmiKyPumYUvsZlv65Zs4gkqhLrV2WgB3W1QbA")
+    user = FbBurrito.user(:auth_code => @options[:auth_code])
 
     log("User", user)
 
@@ -54,7 +61,7 @@ describe "Facebook Graph" do
   end
 
   it "should return a Facebook user's non-public info from an access_token" do
-    user = FbBurrito.user(:access_token => "AAAEW9np7y4gBAFzwdDxGwfSHw5umhbBT8vmdZBOvgSAVoAekh7nHz5nYiMQJAIFRNHLTkGBhDdZAZAPrZBTjfxGvWbO64AGLCzajrDS9BAZDZD")
+    user = FbBurrito.user(:access_token => @options[:access_token])
 
     log("User", user)
 
@@ -86,7 +93,7 @@ describe "Facebook Graph" do
   end
 
   it "should create a new user from an auth_code" do
-    user = FbBurrito.find_or_create_user!(:auth_code => "AQBli9JgrXT0JhDDXw6x0E9V2w_mvxSQHEgkBYS5-jdxdZrd0mhGs59KIr95tAnS-OMX2GjXuLxBcaCqf708gx7z1Ne4RoDXT3P7aB057AgUt9f1v3SVdLENPGntFR9QuujhBaPrDQu7R0oE-Yj4OcZZ_yTKGHhmiKyPumYUvsZlv65Zs4gkqhLrV2WgB3W1QbA")
+    user = FbBurrito.find_or_create_user!(:auth_code => @options[:auth_code])
 
     log("User", user)
 
@@ -113,6 +120,20 @@ describe "Facebook Graph" do
     user.fb_token.should eq(nil)
   end
 
+  it "should publish to a users feed" do
+    options = {
+      :access_token => @options[:access_token],
+      :message => "My message",
+      :name => "My name",
+      :caption => "My caption",
+      :description => "My description",
+      :picture => "https://s3.amazonaws.com/uploads.hipchat.com/10651/44394/nrr1w7vrzfobny2/Critz_duuuuude.gif",
+      :link => "https://github.com/ovenbits-ingredients/fb_burrito"
+    }
+
+    res = FbBurrito.publish_feed!(options)
+    res.should include(:id)
+  end
 end
 
 def log(name, data)
