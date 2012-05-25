@@ -9,16 +9,20 @@ class FbBurrito
 
     config = if defined?(Rails)
       path = File.join(Rails.root, path)
-      yaml = YAML.load_file(path)
+      yaml = load_config_yaml(path)
 
       yaml[Rails.env.to_sym]
     else
-      yaml = YAML.load_file(path)
+      yaml = load_config_yaml(path)
 
       yaml[:environment]
     end
 
-    Util.keys_to_symbols(config)
+    config
+  end
+
+  def self.load_config_yaml(path)
+    Util.keys_to_symbols(YAML.load_file(path))
   end
 
   def self.auth_url(options={})
