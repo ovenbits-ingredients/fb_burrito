@@ -133,15 +133,19 @@ class FbBurrito
 
       redirect_url = options.delete(:redirect_url) || config[:redirect_url]
       scope = if (perms = options.delete(:permissions))
-        perms.is_a?(Array) ? perms.join(",") : perms
+        if perms.is_a?(Array)
+          config[:permissions] + perms
+        else
+          config[:permissions] + perms.split(",")
+        end
       else
-        config[:permissions].join(",")
+        config[:permissions]
       end
 
       self.options = options.merge(
         :client_id => config[:app_id],
         :redirect_uri => CGI.escape(redirect_url),
-        :scope => scope
+        :scope => scope.join(",")
       )
     end
 

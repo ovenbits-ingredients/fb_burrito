@@ -19,6 +19,14 @@ describe "Facebook Graph" do
     uri.query.should =~ /redirect_uri/
   end
 
+  it "should accept a permissions parameter" do
+    uri = URI.parse(FbBurrito.auth_url(:permissions => "manage_pages"))
+
+    log("Auth url", uri)
+
+    uri.query.should =~ /manage_pages/
+  end
+
   it "should return a Facebook access_token" do
     token = FbBurrito.get_access_token(:auth_code => @options[:auth_code])
 
