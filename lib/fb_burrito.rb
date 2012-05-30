@@ -294,8 +294,10 @@ class FbBurrito
       end
 
       # recursively convert hash string keys to symbols
-      def keys_to_symbols(hash)
-        hash.inject({}) do |new_hash, (k, v)|
+      def keys_to_symbols(value)
+        return value if value.is_a?(String)
+
+        value.inject({}) do |new_hash, (k, v)|
           new_hash[k.to_sym] = if v.is_a?(Hash)
             keys_to_symbols(v)
           elsif v.is_a?(Array)
