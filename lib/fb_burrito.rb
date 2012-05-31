@@ -34,15 +34,15 @@ class FbBurrito
   end
 
   def self.user(options={})
-    OpenGraph.new(options).user
+    User.new(options).data
   end
 
   def self.find_or_create_user!(options)
-    OpenGraph.new(options).find_or_create!
+    User.new(options).find_or_create!
   end
 
   def self.publish_feed!(options)
-    OpenGraph.new(options).publish_feed!
+    Feed.new(options).publish!
   end
 
   class FbUser
@@ -75,58 +75,8 @@ class FbBurrito
 
   end
 
-  class FQL
-
-    include HTTParty
-    base_uri 'https://graph.facebook.com'
-
-    def self.query(access_token, q)
-      options = {
-        :access_token => access_token,
-        :q => q
-      }
-      res = get("/fql", :query => options)
-
-      return Util.parse_response(res)
-    end
-
-  end
-
-  class Batch
-
-    include HTTParty
-    base_uri 'https://graph.facebook.com'
-
-    def self.send(access_token, paths)
-      batch_options = paths.inject([]) do |batch, path|
-        batch.push({
-          :method => "GET",
-          :relative_url => path
-        })
-        batch
-      end
-
-      options = {
-        :access_token => access_token,
-        :batch => batch_options.to_json
-      }
-
-      res = post("/", :query => options)
-      data = JSON.parse(res.body)
-
-      if res.code == 200
-        data.map do |obj|
-          data = JSON.parse(obj["body"])
-        end
-      else
-        error = data["error"]
-        puts "#{error["type"]}: #{error["message"]}"
-      end
-    end
-
-  end
-
   class OpenGraph
+
     include HTTParty
 
     attr_accessor :config, :options, :auth_code, :access_token, :uid
@@ -181,7 +131,25 @@ class FbBurrito
       return token
     end
 
-    def user
+    private
+
+    def set_user_attr(key, value)
+      user_attr = config[:user_attributes]
+
+      return unless (@user.send("#{user_attr[key]}?") rescue nil)
+
+      @user.send("#{user_attr[key]}=", value)
+    end
+
+  end
+
+  class User < OpenGraph
+
+    attr_accessor :data
+
+    def initialize(options={})
+      super(options)
+
       get_access_token if auth_code
 
       uri = URI.parse("https://graph.facebook.com/#{uid}")
@@ -189,12 +157,28 @@ class FbBurrito
 
       res = OpenGraph.get(uri.to_s)
 
-      return Util.parse_response(res)
+      info_hash = Util.parse_response(res)
+
+      # build picture urls
+      pic_sizes = [:square, :small, :normal, :large]
+      base_pic_url = uri.to_s
+      info_hash.merge!(
+        :profile_pic_urls => pic_sizes.inject({}){ |hash, size|
+          hash[size] = profile_pic_url(size)
+          hash
+        }
+      )
+
+      self.data = info_hash
+    end
+
+    def profile_pic_url(size=:large)
+      "https://graph.facebook.com/#{uid}/picture?type=#{size}"
     end
 
     def find_or_create!
       # must have fb_user info to continue
-      return nil unless (fb_user = user)
+      return nil unless (fb_user = info)
 
       # default class is User
       user_attr = FbBurrito.config[:user_attributes]
@@ -242,7 +226,11 @@ class FbBurrito
       return @user
     end
 
-    def publish_feed!
+  end
+
+  class Feed < OpenGraph
+
+    def publish!
       uri = URI.parse("https://graph.facebook.com/#{uid}/feed")
       uri.query = "access_token=#{access_token}"
 
@@ -251,14 +239,95 @@ class FbBurrito
       return Util.parse_response(res)
     end
 
-    private
+  end
 
-    def set_user_attr(key, value)
-      user_attr = config[:user_attributes]
+  class Page < OpenGraph
 
-      return unless (@user.send("#{user_attr[key]}?") rescue nil)
+    attr_accessor :data
 
-      @user.send("#{user_attr[key]}=", value)
+    def initialize(options={})
+      return unless page_id = options.delete(:id)
+      super(options)
+
+      uri = URI.parse("https://graph.facebook.com/#{page_id}")
+      uri.query = "access_token=#{access_token}" if access_token
+
+      res = OpenGraph.get(uri.to_s)
+
+      self.data = Util.parse_response(res)
+    end
+
+  end
+
+  class Post < OpenGraph
+
+    attr_accessor :data
+
+    def initialize(options={})
+      return unless post_id = options.delete(:id)
+      super(options)
+
+      uri = URI.parse("https://graph.facebook.com/#{post_id}")
+      uri.query = "access_token=#{access_token}" if access_token
+
+      res = OpenGraph.get(uri.to_s)
+
+      self.data = Util.parse_response(res)
+    end
+
+    def comments
+      data[:comments][:data]
+    end
+
+  end
+
+  class FQL
+
+    include HTTParty
+    base_uri 'https://graph.facebook.com'
+
+    def self.query(access_token, q)
+      options = {
+        :access_token => access_token,
+        :q => q
+      }
+      res = get("/fql", :query => options)
+
+      return Util.parse_response(res)
+    end
+
+  end
+
+  class Batch
+
+    include HTTParty
+    base_uri 'https://graph.facebook.com'
+
+    def self.send(access_token, paths)
+      batch_options = paths.inject([]) do |batch, path|
+        batch.push({
+          :method => "GET",
+          :relative_url => path
+        })
+        batch
+      end
+
+      options = {
+        :access_token => access_token,
+        :batch => batch_options.to_json
+      }
+
+      res = post("/", :query => options)
+      data = JSON.parse(res.body)
+
+      if res.code == 200
+        data.map do |obj|
+          data = JSON.parse(obj["body"])
+        end
+      else
+        error = data["error"]
+        puts "#{error["type"]}: #{error["message"]}"
+      end
     end
 
   end
