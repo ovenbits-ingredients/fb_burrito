@@ -53,15 +53,6 @@ class FbBurrito
       # fetch.friends
     end
 
-    def page(page_id)
-      #TODO: remove FbGraph dependency
-
-      # FbGraph::Page.new(page_id).fetch(
-      #   :access_token => access_token,
-      #   :fields => [:access_token, :name]
-      # )
-    end
-
     def exchange_token
       #TODO: remove FbGraph dependency
 
@@ -176,9 +167,27 @@ class FbBurrito
       "https://graph.facebook.com/#{uid}/picture?type=#{size}"
     end
 
+    def friends
+      uri = URI.parse("https://graph.facebook.com/#{uid}/friends")
+      uri.query = "access_token=#{access_token}" if access_token
+
+      res = OpenGraph.get(uri.to_s)
+
+      Util.parse_response(res)[:data]
+    end
+
+    def accounts
+      uri = URI.parse("https://graph.facebook.com/#{uid}/accounts")
+      uri.query = "access_token=#{access_token}" if access_token
+
+      res = OpenGraph.get(uri.to_s)
+
+      Util.parse_response(res)[:data]
+    end
+
     def find_or_create!
       # must have fb_user info to continue
-      return nil unless (fb_user = info)
+      return nil unless (fb_user = data)
 
       # default class is User
       user_attr = FbBurrito.config[:user_attributes]
