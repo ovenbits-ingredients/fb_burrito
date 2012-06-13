@@ -45,27 +45,6 @@ class FbBurrito
     Feed.new(options).publish!
   end
 
-  class FbUser
-
-    def friends
-      #TODO: remove FbGraph dependency
-
-      # fetch.friends
-    end
-
-    def exchange_token
-      #TODO: remove FbGraph dependency
-
-      # auth = FbGraph::Auth.new(
-      #   FbBurrito.config[:app_id],
-      #   FbBurrito.config[:app_secret]
-      # )
-      # res = auth.exchange_token!(access_token)
-      # res.access_token
-    end
-
-  end
-
   class OpenGraph
 
     include HTTParty
@@ -183,6 +162,15 @@ class FbBurrito
       res = OpenGraph.get(uri.to_s)
 
       Util.parse_response(res)[:data]
+    end
+
+    def permissions
+      uri = URI.parse("https://graph.facebook.com/#{uid}/permissions")
+      uri.query = "access_token=#{access_token}" if access_token
+
+      res = OpenGraph.get(uri.to_s)
+
+      Util.parse_response(res)[:data].first
     end
 
     def find_or_create!
