@@ -25,40 +25,41 @@ class FbBurrito
     Util.keys_to_symbols(YAML.load_file(path))
   end
 
-  def self.auth_url(options={})
-    OpenGraph.new(options).auth_url
+  def self.auth_url(params={})
+    OpenGraph.new(params).auth_url
   end
 
-  def self.get_access_token(options={})
-    OpenGraph.new(options).get_access_token
+  def self.get_access_token(params={})
+    OpenGraph.new(params).get_access_token
   end
 
-  def self.user(options={})
-    User.new(options).data
+  def self.user(params={})
+    User.new(params).data
   end
 
-  def self.find_or_create_user!(options)
-    User.new(options).find_or_create!
+  def self.find_or_create_user!(params)
+    User.new(params).find_or_create!
   end
 
-  def self.publish_feed!(options)
-    Feed.new(options).publish!
+  def self.publish_feed!(params)
+    Feed.new(params).publish!
   end
 
   class OpenGraph
 
     include HTTParty
 
-    attr_accessor :config, :options, :auth_code, :access_token, :uid
+    attr_accessor :config, :params, :auth_options, :auth_code, :access_token, :uid
 
-    def initialize(options={})
+    def initialize(params={})
       self.config = FbBurrito.config
-      self.auth_code = options.delete(:auth_code)
-      self.access_token = options.delete(:access_token)
-      self.uid = options.delete(:uid) || "me"
+      self.params = params
+      self.auth_code = params[:auth_code]
+      self.access_token = params[:access_token]
+      self.uid = params[:uid] || "me"
 
-      redirect_url = options.delete(:redirect_url) || config[:redirect_url]
-      scope = if (perms = options.delete(:permissions))
+      redirect_url = params[:redirect_url] || config[:redirect_url]
+      scope = if (perms = params.delete(:permissions))
         if perms.is_a?(Array)
           config[:permissions] + perms
         else
@@ -68,16 +69,16 @@ class FbBurrito
         config[:permissions]
       end
 
-      self.options = options.merge(
+      self.auth_options = {
         :client_id => config[:app_id],
         :redirect_uri => CGI.escape(redirect_url),
         :scope => scope.join(",")
-      )
+      }
     end
 
     def auth_url
       uri = URI.parse("https://www.facebook.com/dialog/oauth")
-      uri.query = Util.to_query(options)
+      uri.query = Util.to_query(auth_options)
 
       return uri.to_s
     end
@@ -85,7 +86,7 @@ class FbBurrito
     def get_access_token
       uri = URI.parse("https://graph.facebook.com/oauth/access_token")
 
-      query_hash = options.merge(
+      query_hash = auth_options.merge(
         :client_secret => config[:app_secret],
         :code => auth_code
       )
@@ -99,6 +100,22 @@ class FbBurrito
       self.access_token = token
 
       return token
+    end
+
+    def user
+      User.new(params)
+    end
+
+    def feed
+      Feed.new(params)
+    end
+
+    def page
+      Page.new(params)
+    end
+
+    def post
+      Post.new(params)
     end
 
     private
@@ -117,8 +134,8 @@ class FbBurrito
 
     attr_accessor :data
 
-    def initialize(options={})
-      super(options)
+    def initialize(params={})
+      super(params)
 
       get_access_token if auth_code
 
@@ -210,7 +227,7 @@ class FbBurrito
           user_attr[:email] => fb_user[:email],
           user_attr[:uid] => fb_user[:id],
           user_attr[:access_token] => access_token,
-          user_attr[:password] => (options[:password] || Util.friendly_token)
+          user_attr[:password] => (params[:password] || Util.friendly_token)
         )
 
         # check for a ghost user
@@ -231,7 +248,7 @@ class FbBurrito
       uri = URI.parse("https://graph.facebook.com/#{uid}/feed")
       uri.query = "access_token=#{access_token}"
 
-      res = OpenGraph.post(uri.to_s, :body => options)
+      res = OpenGraph.post(uri.to_s, :body => params)
 
       return Util.parse_response(res)
     end
@@ -242,9 +259,9 @@ class FbBurrito
 
     attr_accessor :data
 
-    def initialize(options={})
-      return unless page_id = options.delete(:id)
-      super(options)
+    def initialize(params={})
+      return unless page_id = params.delete(:id)
+      super(params)
 
       uri = URI.parse("https://graph.facebook.com/#{page_id}")
       uri.query = "access_token=#{access_token}" if access_token
@@ -260,9 +277,9 @@ class FbBurrito
 
     attr_accessor :data
 
-    def initialize(options={})
-      return unless post_id = options.delete(:id)
-      super(options)
+    def initialize(params={})
+      return unless post_id = params.delete(:id)
+      super(params)
 
       uri = URI.parse("https://graph.facebook.com/#{post_id}")
       uri.query = "access_token=#{access_token}" if access_token
