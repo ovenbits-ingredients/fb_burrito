@@ -204,7 +204,7 @@ class FbBurrito
       puts "Finding user..."
       # check to see if the user already exists
       if @user = user_class.where(
-        "#{user_attr[:id].to_s} = ? OR #{user_attr[:email].to_s} = ?",
+        "#{user_attr[:uid].to_s} = ? OR #{user_attr[:email].to_s} = ?",
         fb_user[:id],
         fb_user[:email]
       ).first
