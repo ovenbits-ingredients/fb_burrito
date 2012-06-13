@@ -123,7 +123,9 @@ class FbBurrito
     def set_user_attr(key, value)
       user_attr = config[:user_attributes]
 
-      return unless @user.send("#{user_attr[key]}?")
+      return if @user.attributes.detect{ |k, v|
+        k.to_s == user_attr[key].to_s
+      }.nil?
 
       @user.send("#{user_attr[key]}=", value)
     end
@@ -232,6 +234,7 @@ class FbBurrito
 
         # check for a ghost user
         if user_attr[:is_ghost] && fb_user[:email].nil?
+          set_user_attr(:email, "")
           set_user_attr(:is_ghost, true)
         end
       end
