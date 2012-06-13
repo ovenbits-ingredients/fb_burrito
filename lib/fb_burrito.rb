@@ -226,7 +226,7 @@ class FbBurrito
         @user = user_class.new(
           user_attr[:first_name] => fb_user[:first_name],
           user_attr[:last_name] => fb_user[:last_name],
-          user_attr[:email] => fb_user[:email],
+          user_attr[:email] => (params[:email] || fb_user[:email]),
           user_attr[:uid] => fb_user[:id],
           user_attr[:access_token] => access_token,
           user_attr[:password] => (params[:password] || Util.friendly_token)
