@@ -123,7 +123,7 @@ class FbBurrito
     def set_user_attr(key, value)
       user_attr = config[:user_attributes]
 
-      return unless (@user.send("#{user_attr[key]}?") rescue nil)
+      return unless @user.send("#{user_attr[key]}?")
 
       @user.send("#{user_attr[key]}=", value)
     end
@@ -235,6 +235,7 @@ class FbBurrito
           set_user_attr(:is_ghost, true)
         end
       end
+
       @user.save!
 
       return @user

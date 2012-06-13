@@ -98,6 +98,7 @@ describe "Facebook Graph" do
 
     user.email.should eq(nil)
     user.fb_token.should eq(nil)
+    user.is_ghost.should eq(true)
   end
 
   it "should create a new user from an auth_code" do
@@ -112,6 +113,7 @@ describe "Facebook Graph" do
 
     user.email.should_not eq(nil)
     user.fb_token.should_not eq(nil)
+    user.is_ghost.should eq(nil)
   end
 
   it "should find an existing user from a uid" do
@@ -126,6 +128,7 @@ describe "Facebook Graph" do
 
     user.email.should_not eq(nil)
     user.fb_token.should eq(nil)
+    user.is_ghost.should eq(nil)
   end
 
   it "should publish to a users feed" do
@@ -150,15 +153,15 @@ end
 
 # used to simulate an active record User model so we can test creating a user
 class User
-  attr_accessor :first_name, :last_name, :email, :password, :fb_token, :fb_uid
+  attr_accessor :first_name, :last_name, :email, :password, :fb_token, :fb_uid, :is_ghost
 
   def self.where(*args)
     if args[1] == "639106065"
       [new(
         :first_name => "Boosh",
         :last_name => "Dude",
-        :email => "boosh.dude@gmail.com",
-        :fb_uid => nil,
+        :email => "dude@dude.com",
+        :fb_uid => "639106065",
         :fb_token => nil,
         :password => "dude"
       )]
@@ -178,11 +181,15 @@ class User
   end
 
   def fb_uid?
-    true
+    !fb_uid.nil?
   end
 
   def fb_token?
-    true
+    !fb_token.nil?
+  end
+
+  def is_ghost?
+    email.nil?
   end
 
 end
