@@ -85,6 +85,19 @@ describe "Facebook Graph" do
     user.is_ghost.should eq(nil)
   end
 
+  it "should create a new user from a Page User uid" do
+    user = FbBurrito.find_or_create_user!(:uid => "104670449570510")
+
+    user.first_name.should_not eq(nil)
+    user.last_name.should_not eq(nil)
+    user.fb_uid.should_not eq(nil)
+    user.password.should_not eq(nil)
+
+    user.email.should eq(nil)
+    user.fb_token.should eq(nil)
+    user.is_ghost.should eq(true)
+  end
+
 end
 
 # used to simulate an active record User model so we can test creating a user

@@ -226,14 +226,25 @@ class FbBurrito
         puts " Creating user..."
 
         @user = user_class.new(
-          user_attr[:first_name] => fb_user[:first_name],
-          user_attr[:last_name] => fb_user[:last_name],
           user_attr[:username] => fb_user[:username],
           user_attr[:email] => (params[:email] || fb_user[:email]),
           user_attr[:uid] => fb_user[:id],
           user_attr[:access_token] => access_token,
           user_attr[:password] => (params[:password] || Util.friendly_token)
         )
+
+        # check for name field
+        first_name = fb_user[:first_name]
+        last_name = fb_user[:last_name]
+
+        if full_name = fb_user[:name]
+          names = full_name.split(" ")
+          first_name = names.shift
+          last_name = names.join(" ")
+        end
+
+        set_user_attr(:first_name, first_name)
+        set_user_attr(:last_name, last_name)
 
         # check for a ghost user
         if user_attr[:is_ghost] && fb_user[:email].nil?
