@@ -70,6 +70,7 @@ class FbBurrito
       end
 
       self.auth_options = {
+        :display => params[:display] || 'page',
         :client_id => config[:app_id],
         :redirect_uri => CGI.escape(redirect_url),
         :scope => scope.join(",")
