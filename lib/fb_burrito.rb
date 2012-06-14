@@ -124,6 +124,7 @@ class FbBurrito
     def set_user_attr(key, value)
       user_attr = config[:user_attributes]
 
+      return unless user_attr[key]
       return unless @user.respond_to?(user_attr[key])
 
       @user.send("#{user_attr[key]}=", value)
