@@ -3,6 +3,7 @@
   :user_class: User
   :first_name: :first_name
   :last_name: :last_name
+  :username: :username
   :email: :email
   :uid: :fb_uid
   :access_token: :fb_token

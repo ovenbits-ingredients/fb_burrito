@@ -153,16 +153,17 @@ end
 
 # used to simulate an active record User model so we can test creating a user
 class User
-  attr_accessor :first_name, :last_name, :email, :password, :fb_token, :fb_uid, :is_ghost
+  attr_accessor :first_name, :last_name, :username, :email, :password, :fb_token, :fb_uid, :is_ghost
 
   def self.where(*args)
     if args[1] == "639106065"
       [new(
         :first_name => "Boosh",
         :last_name => "Dude",
+        :username => "booshdude",
         :email => "dude@dude.com",
         :fb_uid => "639106065",
-        :fb_token => nil,
+        :fb_token => "asdf",
         :password => "dude"
       )]
     else
