@@ -48,6 +48,7 @@ class FbBurrito
   class OpenGraph
 
     include HTTParty
+    base_uri "https://graph.facebook.com"
 
     attr_accessor :config, :params, :auth_options, :auth_code, :access_token, :uid
 
@@ -103,6 +104,28 @@ class FbBurrito
       return token
     end
 
+    def get_graph(path, query_params=nil)
+      query = (query_params || params).merge(
+        :access_token => access_token
+      )
+
+      res = OpenGraph.get(path, :query => query)
+
+      data_hash = Util.parse_response(res)
+
+      return data_hash[:data] if data_hash.has_key?(:data)
+      return data_hash
+    end
+
+    def post_graph(path, body_params=nil)
+      body = (body_params || params)
+      query = { :access_token => access_token }
+
+      res = OpenGraph.post(path, :body => body, :query => query)
+
+      Util.parse_response(res)
+    end
+
     def user
       User.new(params)
     end
@@ -141,16 +164,10 @@ class FbBurrito
 
       get_access_token if auth_code
 
-      uri = URI.parse("https://graph.facebook.com/#{uid}")
-      uri.query = "access_token=#{access_token}" if access_token
-
-      res = OpenGraph.get(uri.to_s)
-
-      info_hash = Util.parse_response(res)
+      info_hash = get_graph("/#{uid}")
 
       # build picture urls
       pic_sizes = [:square, :small, :normal, :large]
-      base_pic_url = uri.to_s
       info_hash.merge!(
         :profile_pic_urls => pic_sizes.inject({}){ |hash, size|
           hash[size] = profile_pic_url(size)
@@ -166,30 +183,15 @@ class FbBurrito
     end
 
     def friends
-      uri = URI.parse("https://graph.facebook.com/#{uid}/friends")
-      uri.query = "access_token=#{access_token}" if access_token
-
-      res = OpenGraph.get(uri.to_s)
-
-      Util.parse_response(res)[:data]
+      get_graph("/#{uid}/friends")
     end
 
     def accounts
-      uri = URI.parse("https://graph.facebook.com/#{uid}/accounts")
-      uri.query = "access_token=#{access_token}" if access_token
-
-      res = OpenGraph.get(uri.to_s)
-
-      Util.parse_response(res)[:data]
+      get_graph("/#{uid}/accounts")
     end
 
     def permissions
-      uri = URI.parse("https://graph.facebook.com/#{uid}/permissions")
-      uri.query = "access_token=#{access_token}" if access_token
-
-      res = OpenGraph.get(uri.to_s)
-
-      Util.parse_response(res)[:data].first
+      get_graph("/#{uid}/permissions").first
     end
 
     def find_or_create!
@@ -249,12 +251,7 @@ class FbBurrito
   class Feed < OpenGraph
 
     def publish!
-      uri = URI.parse("https://graph.facebook.com/#{uid}/feed")
-      uri.query = "access_token=#{access_token}"
-
-      res = OpenGraph.post(uri.to_s, :body => params)
-
-      return Util.parse_response(res)
+      post_graph("/#{uid}/feed")
     end
 
   end
@@ -264,15 +261,10 @@ class FbBurrito
     attr_accessor :data
 
     def initialize(params={})
-      return unless page_id = params.delete(:id)
+      page_id = params.delete(:id)
       super(params)
 
-      uri = URI.parse("https://graph.facebook.com/#{page_id}")
-      uri.query = "access_token=#{access_token}" if access_token
-
-      res = OpenGraph.get(uri.to_s)
-
-      self.data = Util.parse_response(res)
+      self.data = get_graph("/#{page_id}")
     end
 
   end
@@ -282,15 +274,10 @@ class FbBurrito
     attr_accessor :data
 
     def initialize(params={})
-      return unless post_id = params.delete(:id)
+      post_id = params.delete(:id)
       super(params)
 
-      uri = URI.parse("https://graph.facebook.com/#{post_id}")
-      uri.query = "access_token=#{access_token}" if access_token
-
-      res = OpenGraph.get(uri.to_s)
-
-      self.data = Util.parse_response(res)
+      self.data = get_graph("/#{post_id}")
     end
 
     def comments
@@ -299,19 +286,21 @@ class FbBurrito
 
   end
 
-  class FQL
-
-    include HTTParty
-    base_uri 'https://graph.facebook.com'
+  class FQL < OpenGraph
 
     def self.query(access_token, q)
-      options = {
+      new(
         :access_token => access_token,
         :q => q
-      }
-      res = get("/fql", :query => options)
+      ).data
+    end
 
-      return Util.parse_response(res)
+    attr_accessor :data
+
+    def initialize(params={})
+      super(params)
+
+      self.data = get_graph("/fql")
     end
 
   end
