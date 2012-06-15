@@ -200,10 +200,8 @@ class FbBurrito
 
       # default class is User
       user_attr = FbBurrito.config[:user_attributes]
-      user_class = Object.class_eval(
-        FbBurrito.config[:user_attributes][:user_class] ||
-        "User"
-      )
+      user_class_name = (user_attr[:user_class] || "User")
+      user_class = Object.class_eval("::#{user_class_name}")
 
       puts "Finding user..."
       # check to see if the user already exists
@@ -226,11 +224,8 @@ class FbBurrito
         puts " Creating user..."
 
         @user = user_class.new(
-          user_attr[:username] => fb_user[:username],
-          user_attr[:email] => (params[:email] || fb_user[:email]),
           user_attr[:uid] => fb_user[:id],
-          user_attr[:access_token] => access_token,
-          user_attr[:password] => (params[:password] || Util.friendly_token)
+          user_attr[:access_token] => access_token
         )
 
         # check for name field
@@ -245,6 +240,18 @@ class FbBurrito
 
         set_user_attr(:first_name, first_name)
         set_user_attr(:last_name, last_name)
+
+        if user_attr[:username]
+          set_user_attr(:username, fb_user[:username])
+        end
+
+        if user_attr[:email] && email = (params[:email] || fb_user[:email])
+          set_user_attr(:email, email)
+        end
+
+        if user_attr[:password] && password = (params[:password] || Util.friendly_token)
+          set_user_attr(:password, password)
+        end
 
         # check for a ghost user
         if user_attr[:is_ghost] && fb_user[:email].nil?
