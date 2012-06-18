@@ -368,7 +368,9 @@ class FbBurrito
     class << self
 
       def parse_cookie(cookie_data)
-        encrypted_sig, encrypted_data = cookie_data.split('.')
+        fb_cookie = cookie_data["fbsr_#{FbBurrito.config[:app_id]}"]
+
+        encrypted_sig, encrypted_data = fb_cookie.split('.')
         raise 'Cookie is invalid' unless encrypted_sig && encrypted_data
 
         sig = base64_url_decode(
