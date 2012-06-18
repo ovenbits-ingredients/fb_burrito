@@ -50,16 +50,17 @@ class FbBurrito
     include HTTParty
     base_uri "https://graph.facebook.com"
 
-    attr_accessor :config, :params, :auth_options, :auth_code, :access_token, :uid
+    attr_accessor :config, :params, :auth_options, :auth_code, :cookies, :access_token, :uid
 
     def initialize(params={})
       self.config = FbBurrito.config
       self.params = params
       self.auth_code = params[:auth_code]
+      self.cookies = params[:cookies]
       self.access_token = params[:access_token]
       self.uid = params[:uid] || "me"
 
-      redirect_url = params[:redirect_url] || config[:redirect_url]
+      redirect_url = (params[:redirect_url] || config[:redirect_url])
       scope = if (perms = params.delete(:permissions))
         if perms.is_a?(Array)
           config[:permissions] + perms
@@ -88,9 +89,14 @@ class FbBurrito
     def get_access_token
       uri = URI.parse("https://graph.facebook.com/oauth/access_token")
 
+      if cookies
+        self.auth_code = Util.parse_cookie(cookies)["code"]
+        auth_options[:redirect_uri] = ""
+      end
+
       query_hash = auth_options.merge(
         :client_secret => config[:app_secret],
-        :code => auth_code
+        :code => CGI.escape(auth_code)
       )
 
       uri.query = Util.to_query(query_hash)
@@ -162,7 +168,7 @@ class FbBurrito
     def initialize(params={})
       super(params)
 
-      get_access_token if auth_code
+      get_access_token if (auth_code || cookies)
 
       info_hash = get_graph("/#{uid}")
 
@@ -360,6 +366,36 @@ class FbBurrito
   class Util
 
     class << self
+
+      def parse_cookie(cookie_data)
+        encrypted_sig, encrypted_data = cookie_data.split('.')
+        raise 'Cookie is invalid' unless encrypted_sig && encrypted_data
+
+        sig = base64_url_decode(
+          encrypted_sig
+        ).unpack("H*").first
+
+        data = JSON.parse(
+          base64_url_decode(
+            encrypted_data
+          )
+        )
+
+        verify_sig = OpenSSL::HMAC.hexdigest(
+          OpenSSL::Digest::SHA256.new,
+          FbBurrito.config[:app_secret],
+          encrypted_data
+        )
+
+        raise 'Cookie is invalid' if (sig != verify_sig)
+
+        data
+      end
+
+      def base64_url_decode(str)
+        str += '=' * (4 - str.length.modulo(4))
+        Base64.decode64(str.tr('-_', '+/'))
+      end
 
       def friendly_token
         token = ""
