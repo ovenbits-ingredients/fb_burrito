@@ -98,6 +98,8 @@ class FbBurrito
         auth_options[:redirect_uri] = ""
       end
 
+      return nil unless auth_code
+
       query_hash = auth_options.merge(
         :client_secret => config[:app_secret],
         :code => CGI.escape(auth_code)
@@ -208,7 +210,7 @@ class FbBurrito
     def initialize(params={})
       super(params)
 
-      get_access_token if (auth_code || cookies)
+      get_access_token
 
       info_hash = get_graph("/#{uid}")
 
