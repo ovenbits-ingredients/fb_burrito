@@ -33,6 +33,10 @@ class FbBurrito
     OpenGraph.new(params).get_access_token
   end
 
+  def self.get_cookie_data(cookies={})
+    OpenGraph.new(:cookies => cookies).get_cookie_data
+  end
+
   def self.user(params={})
     User.new(params).data
   end
@@ -90,7 +94,7 @@ class FbBurrito
       uri = URI.parse("https://graph.facebook.com/oauth/access_token")
 
       if cookies
-        self.auth_code = Util.parse_cookie(cookies)["code"]
+        self.auth_code = get_cookie_auth_code
         auth_options[:redirect_uri] = ""
       end
 
@@ -108,6 +112,42 @@ class FbBurrito
       self.access_token = token
 
       return token
+    end
+
+    def get_cookie_auth_code
+      parse_cookie_data["code"]
+    end
+
+    def get_cookie_data
+      cookies["fbsr_#{FbBurrito.config[:app_id]}"]
+    end
+
+    def parse_cookie_data
+      fb_cookie = get_cookie_data
+      return {} unless fb_cookie
+
+      encrypted_sig, encrypted_data = fb_cookie.split('.')
+      raise 'Cookie is invalid' unless encrypted_sig && encrypted_data
+
+      sig = Util.base64_url_decode(
+        encrypted_sig
+      ).unpack("H*").first
+
+      data = JSON.parse(
+        Util.base64_url_decode(
+          encrypted_data
+        )
+      )
+
+      verify_sig = OpenSSL::HMAC.hexdigest(
+        OpenSSL::Digest::SHA256.new,
+        FbBurrito.config[:app_secret],
+        encrypted_data
+      )
+
+      raise 'Cookie is invalid' if (sig != verify_sig)
+
+      data
     end
 
     def get_graph(path, query_params=nil)
@@ -366,33 +406,6 @@ class FbBurrito
   class Util
 
     class << self
-
-      def parse_cookie(cookie_data)
-        fb_cookie = cookie_data["fbsr_#{FbBurrito.config[:app_id]}"]
-
-        encrypted_sig, encrypted_data = fb_cookie.split('.')
-        raise 'Cookie is invalid' unless encrypted_sig && encrypted_data
-
-        sig = base64_url_decode(
-          encrypted_sig
-        ).unpack("H*").first
-
-        data = JSON.parse(
-          base64_url_decode(
-            encrypted_data
-          )
-        )
-
-        verify_sig = OpenSSL::HMAC.hexdigest(
-          OpenSSL::Digest::SHA256.new,
-          FbBurrito.config[:app_secret],
-          encrypted_data
-        )
-
-        raise 'Cookie is invalid' if (sig != verify_sig)
-
-        data
-      end
 
       def base64_url_decode(str)
         str += '=' * (4 - str.length.modulo(4))
