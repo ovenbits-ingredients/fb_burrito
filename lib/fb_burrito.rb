@@ -301,6 +301,10 @@ class FbBurrito
           set_user_attr(:password, password)
         end
 
+        if user_attr[:password_confirmation] && password_confirmation = (params[:password_confirmation] || Util.friendly_token)
+          set_user_attr(:password_confirmation, password_confirmation)
+        end
+
         # check for a ghost user
         if user_attr[:is_ghost] && fb_user[:email].nil?
           set_user_attr(:is_ghost, true)

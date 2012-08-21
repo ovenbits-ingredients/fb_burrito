@@ -8,6 +8,7 @@
   :uid: :fb_uid
   :access_token: :fb_token
   :password: :password
+  :password_confirmation: :password_confirmation
   :is_ghost: :is_ghost
 
 :environment:
