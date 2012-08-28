@@ -93,7 +93,7 @@ class FbBurrito
     def get_access_token
       uri = URI.parse("https://graph.facebook.com/oauth/access_token")
 
-      if cookies
+      if get_cookie_data
         self.auth_code = get_cookie_auth_code
         auth_options[:redirect_uri] = ""
       end
@@ -121,6 +121,7 @@ class FbBurrito
     end
 
     def get_cookie_data
+      return nil unless cookies
       cookies["fbsr_#{FbBurrito.config[:app_id]}"]
     end
 
